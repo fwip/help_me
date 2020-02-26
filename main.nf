@@ -13,9 +13,14 @@ workflow {
         .set { input_fastqs }
 
     // All combinations of callers and aligners invoking align process
-    aligners_callers_dic.each {  aligner, callers ->
-        
-        align( input_fastqs, aligner)
+    aligners = aligners_callers_dic.collect { aligner, callers -> aligner }
 
-    }
+    input_fastqs.combine(aligners) \
+    | multiMap { val, files, aligner ->
+      fastqs: [val, files]
+      aligner: aligner
+    } \
+    | set { combined }
+
+    align( combined.fastqs, combined.aligner )
 }
